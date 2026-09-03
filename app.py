@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
@@ -5,6 +6,7 @@ from langchain_community.vectorstores import Chroma
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
+os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY") or st.secrets["OPENAI_API_KEY"]
 
 # page setup
 
