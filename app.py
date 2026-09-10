@@ -6,8 +6,11 @@ from langchain_community.vectorstores import Chroma
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
-os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY") or st.secrets["OPENAI_API_KEY"]
 
+# Debugging: Print the API key status
+#st.write("API key loaded:", bool(os.getenv("OPENAI_API_KEY")))
+#st.write("API key starts with:", os.getenv("OPENAI_API_KEY", "")[:7])
+#st.write("API key ends with:", os.getenv("OPENAI_API_KEY", "")[-4:])
 # page setup
 
 st.set_page_config(
@@ -21,6 +24,11 @@ st.write(
     "Ask questions about skincare ingredients based on "
     "the information in the provided documents."
 )
+
+# chat history
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
 # connecting to the vector db
 
@@ -44,15 +52,29 @@ llm = ChatOpenAI(
     temperature=0
 )
 
+# displaying chat history
+for messages in st.session_state.messages:
+    with st.chat_message(messages["role"]):
+        st.write(messages["content"])
+
 # user question
-question = st.text_input(
-    "Ask a question:",
-    placeholder="e.g. What does niacinamide do"
-)
+question = st.chat_input("Ask a skincare question...")
 
 # generating answer
 
 if question:
+
+    # adding user's message to chat history
+    st.session_state.messages.append({
+        "role": "user",
+        "content": question
+    })
+
+    # displaying user's message
+    with st.chat_message("user"):
+        st.write(question)
+
+    
     results = retriever.invoke(question)
 
     context = "\n\n".join(
@@ -76,5 +98,27 @@ Question:
 Answer:
 """
     response = llm.invoke(prompt)
-    st.subheader("Answer")
-    st.write(response.content)
+    answer = response.content
+
+    # adding assistant reponse to chat history
+    st.session_state.messages.append({
+        "role": "assistant",
+        "content": answer
+    })
+
+    # displaying assistant's response
+    with st.chat_message("assistant"):
+        st.write(answer)
+
+        #sources
+        st.subheader("Sources")
+        for i, document in enumerate(results):
+            source = document.metadata.get(
+                "source",
+                "Unknown source")
+            page = document.metadata.get(
+                "page",
+                "Unknown page")
+            st.write(
+                f"{i + 1}. {source} (Page: {page})"
+            )

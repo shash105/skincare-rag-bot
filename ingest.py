@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
@@ -5,13 +8,25 @@ from langchain_chroma import Chroma
 from dotenv import load_dotenv
 
 # loading API key from .env file
-load_dotenv()
+load_dotenv(override=True)
 
-# load PDF
-loader = PyPDFLoader("data/niacinamide.pdf")
-documents = loader.load()
+# Debugging: Print the API key status
+#print("API key loaded:", bool(os.getenv("OPENAI_API_KEY")))
+#print("API key starts with:", os.getenv("OPENAI_API_KEY", "")[:7])
+#print("API key ends with:", os.getenv("OPENAI_API_KEY", "")[-4:)
 
-print(f"Number of pages: {len(documents)}")
+
+# Find all PDFs in data folder
+pdf_files = list(Path("data").glob("*.pdf"))
+print(f"Found {len(pdf_files)} PDF files in data folder.")
+
+# load all PDFs
+documents = []
+for pdf_file in pdf_files:
+    loader = PyPDFLoader(str(pdf_file))
+    documents.extend(loader.load())
+
+print(f"Loaded {len(documents)} documents.")
 
 #splitting the documents into chunks
 text_splitter = RecursiveCharacterTextSplitter(
