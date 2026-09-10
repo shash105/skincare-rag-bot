@@ -53,9 +53,9 @@ llm = ChatOpenAI(
 )
 
 # displaying chat history
-for messages in st.session_state.messages:
-    with st.chat_message(messages["role"]):
-        st.write(messages["content"])
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
 
 # user question
 question = st.chat_input("Ask a skincare question...")
@@ -74,8 +74,38 @@ if question:
     with st.chat_message("user"):
         st.write(question)
 
+    # rewrite questio using chat history
+    conversation_history = "\n".join(
+        f"{message['role']}: {message['content']}"
+        for message in st.session_state.messages[:-1]
+    )
+
+    rewrite_prompt = f"""
+    You are a helping a skincare question-answering system. 
+
+    Look at the conversation history and the user's latest question.
+
+    Rewrite the latest question into a standalone question that 
+    can be understood without the conversation history.
+
+    If the question is already clear and standalong, return it unchanged.
+
+    Do not answer the question. Only return the rewritten question.
+
+    Conversation history:
+    {conversation_history}
+
+    Latest question:
+    {question}
+
+    Standalone question:
+    """
+
+    rewritten_question = llm.invoke(rewrite_prompt).content.strip()
+    st.caption(f"Rewritten question: {rewritten_question}")
+
     
-    results = retriever.invoke(question)
+    results = retriever.invoke(rewritten_question)
 
     context = "\n\n".join(
         document.page_content for document in results
@@ -93,7 +123,7 @@ Context:
 {context}
 
 Question:
-{question}
+{rewritten_question}
 
 Answer:
 """
