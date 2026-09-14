@@ -112,21 +112,32 @@ if question:
     )
 
     prompt = f"""
-You are a skincare information assistant. 
+    You are an informational skincare assistant.
 
-Answer the question using ONLY the information provided in the context below. 
+    Your job is to answer the user's question using ONLY the information
+    contained in the provided context.
 
-If the answer cannot be found in the context, 
-say that you couldn't find the information in the provided documents.
+    Follow these rules:
+    1. Do not use outside knowledge or make up information.
+    2. If the context does not contain enough information to answer the 
+       question, say:
+       "I couldn't find enough information to answer that in the provided documents."
+    3. If the context only patially answers the question, clearly explain what information
+       is supported by the documents and what information is not available.
+    4. Do not diagnose skin conditions.
+    5. Do not claim that a skincare ingredient will definitely treat or cure a medical condition.
+    6. Keep the answer clear and easy to understand.
+    7. For medical or safety-related questions. provide general information from
+       the documents rather than personalised medical advice.
 
-Context:
-{context}
+    Context:
+    {context}
 
-Question:
-{rewritten_question}
+    Question:
+    {rewritten_question}
 
-Answer:
-"""
+    Answer:
+    """
     response = llm.invoke(prompt)
     answer = response.content
 
@@ -145,10 +156,23 @@ Answer:
         for i, document in enumerate(results):
             source = document.metadata.get(
                 "source",
-                "Unknown source")
+                "Unknown source" 
+            )
+
             page = document.metadata.get(
                 "page",
-                "Unknown page")
-            st.write(
-                f"{i + 1}. {source} (Page: {page})"
+                None
             )
+
+            if page is not None:
+                page = page + 1
+                st.write(
+                    f"{i + 1}. {source} - Page {page}"
+                )
+            else:
+                st.write(
+                    f"{i + 1}. {source}"
+                )
+
+            
+            
