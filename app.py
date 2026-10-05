@@ -105,11 +105,25 @@ if question:
     st.caption(f"Rewritten question: {rewritten_question}")
 
     
-    results = retriever.invoke(rewritten_question)
-
-    context = "\n\n".join(
-        document.page_content for document in results
+    results_with_scores = vector_store.similarity_search_with_score(
+        rewritten_question,
+        k=3
     )
+
+    SIMILARITY_THRESHOLD = 0.8
+    results = [
+        document
+        for document, score in results_with_scores
+        if score <= SIMILARITY_THRESHOLD
+    ]
+
+
+    if results:
+        context = "\n\n".join(
+        document.page_content for document in results
+        )
+    else:
+        context = "No relevant information was found in the provided documents."
 
     prompt = f"""
     You are an informational skincare assistant.
@@ -152,27 +166,40 @@ if question:
         st.write(answer)
 
         #sources
-        st.subheader("Sources")
-        for i, document in enumerate(results):
-            source = document.metadata.get(
-                "source",
-                "Unknown source" 
-            )
+        if results:
 
-            page = document.metadata.get(
-                "page",
-                None
-            )
+            with st.expander("Sources", expanded=False):
 
-            if page is not None:
-                page = page + 1
-                st.write(
-                    f"{i + 1}. {source} - Page {page}"
-                )
-            else:
-                st.write(
-                    f"{i + 1}. {source}"
-                )
+                seen_sources = set()
+                for document in results:
+                    source = document.metadata.get(
+                        "source",
+                        "Unknown source"
+                    )
+
+                    page = document.metadata.get(
+                        "page",
+                        None
+                    )
+
+                    source_name = source.split("\\")[-1]
+                    if page is not None:
+                        page = page + 1
+
+                        source_key = (source_name, page)
+                        if source_key in seen_sources:
+                            continue
+
+                    seen_sources.add(source_key)
+
+                    if page is not None:
+                        st.markdown(
+                            f"**{source_name}** - Page {page}"
+                        )
+                    else:
+                        st.markdown(
+                            f"**{source_name}**"
+                        )
 
             
             
