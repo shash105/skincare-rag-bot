@@ -1,11 +1,18 @@
 import os
+from pathlib import Path
 import streamlit as st
 
+from ingest import create_vector_database
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.vectorstores import Chroma
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
+try:
+    if "OPENAI_API_KEY" in st.secrets:
+        os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
+except Exception:
+    pass
 
 # Debugging: Print the API key status
 #st.write("API key loaded:", bool(os.getenv("OPENAI_API_KEY")))
@@ -17,6 +24,10 @@ st.set_page_config(
     page_title="Skincare Ingredient Bot",
     page_icon="🧴"
 )
+
+if not Path("db").exists():
+    with st.spinner("Preparing the skincare knowledge base..."):
+        create_vector_database()
 
 st.title("🧴 Skincare Ingredient Bot")
 

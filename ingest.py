@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 from langchain_community.document_loaders import PyPDFLoader
@@ -16,37 +15,38 @@ load_dotenv(override=True)
 #print("API key ends with:", os.getenv("OPENAI_API_KEY", "")[-4:)
 
 
-# Find all PDFs in data folder
-pdf_files = list(Path("data").glob("*.pdf"))
-print(f"Found {len(pdf_files)} PDF files in data folder.")
+# made ingest.py reuasable by creating a function to create the vector database
+def create_vector_database():
 
-# load all PDFs
-documents = []
-for pdf_file in pdf_files:
-    loader = PyPDFLoader(str(pdf_file))
-    documents.extend(loader.load())
+    pdf_files = list(Path("data").glob("*.pdf"))
 
-print(f"Loaded {len(documents)} documents.")
+    print(f"Found {len(pdf_files)} PDF files.")
 
-#splitting the documents into chunks
-text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=500, chunk_overlap=50)
+    documents = []
 
-# calling the function to split into chunks
-chunks = text_splitter.split_documents(documents)
+    for pdf_file in pdf_files:
+        loader = PyPDFLoader(str(pdf_file))
+        documents.extend(loader.load())
 
-print(f"Number of chunks: {len(chunks)}")
+    print(f"Loaded {len(documents)} pages.")
 
-# creating embeddings
-embeddings = OpenAIEmbeddings(
-    model="text-embedding-3-small"
-)
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=500,
+        chunk_overlap=50
+    )
 
-# storing embeddings in chroma
-vector_store = Chroma.from_documents(
-    documents=chunks,
-    embedding=embeddings,
-    persist_directory="db"
-)
+    chunks = text_splitter.split_documents(documents)
 
-print("Embeddings created and stored in Chroma.")
+    print(f"Created {len(chunks)} chunks.")
+
+    embeddings = OpenAIEmbeddings(
+        model="text-embedding-3-small"
+    )
+
+    Chroma.from_documents(
+        documents=chunks,
+        embedding=embeddings,
+        persist_directory="db"
+    )
+
+    print("Embeddings created and stored successfully!")
